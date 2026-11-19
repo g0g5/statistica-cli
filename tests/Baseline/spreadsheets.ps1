@@ -66,6 +66,26 @@ try {
     Assert-CsvMatch
 
     if ((Get-FileHash -LiteralPath $inputSta).Hash -ne $original) { throw 'Export changed the source spreadsheet.' }
+
+    $monthlySta = Join-Path $PSScriptRoot '../fixtures/PR_DWLS_025_005_065_20.sta'
+    $monthlyHash = (Get-FileHash -LiteralPath $monthlySta).Hash
+    foreach ($displayText in $false, $true) {
+        $nativeOptions = @()
+        if ($displayText) { $nativeOptions += '--display-text' }
+        & $legacy ExportCsv -InputPath $monthlySta -OutputPath $oldCsv -Backend Library -Columns '37,35,2,35' -LastRow 3 -DisplayText:$displayText -Force | Out-Null
+        & $exe export-csv --input-path $monthlySta --output-path $newCsv --backend Library --columns '37,35,2,35' --last-row 3 --force @nativeOptions | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw 'Monthly fixture export failed.' }
+        Assert-CsvMatch
+
+        $rows = @(Import-Csv -LiteralPath $newCsv)
+        $expectedDate = if ($displayText) { 'Feb-2008' } else { '103' }
+        if ($rows.Count -ne 3 -or ($rows[0].PSObject.Properties.Name -join ',') -cne 'case_index,v37,v35,v2' -or
+            $rows[1].v37 -cne $expectedDate -or $rows[2].v35 -cne '') {
+            throw 'Monthly fixture export changed column order, date labels or missing values.'
+        }
+    }
+    if ((Get-FileHash -LiteralPath $monthlySta).Hash -ne $monthlyHash) { throw 'Export changed the monthly fixture.' }
+
     if (Get-ChildItem -LiteralPath $work -Filter '.statistica-*' -Force) { throw 'A staging file survived cleanup.' }
     'Inspect, CSV byte parity, overwrite, rollback and source integrity passed.'
 } finally {

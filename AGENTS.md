@@ -31,7 +31,8 @@ statistica-cli/
 |  \- cli-guide.md           # PowerShell CLI 命令、参数和用法示例
 \- tests/
    |- Baseline/              # C# COM 基线和两种入口的数据表结果对照
-   \- smoke.ps1              # 使用 sm3ABP 课程样本验证 PowerShell CLI
+   |- fixtures/              # 随仓库分发的课程测试夹具
+   \- smoke.ps1              # PowerShell CLI 集成冒烟测试
 ```
 
 ## Commands
@@ -50,9 +51,9 @@ dotnet run --project ./tests/Baseline -- $exe
 # 检查 PowerShell CLI 的 COM 后端和工作进程。
 ./scripts/statistica.ps1 Probe -Detailed
 
-# 将示例路径替换为 sm3ABP 课程仓库路径，在项目根目录运行冒烟测试。
+# 在项目根目录使用随附夹具运行冒烟测试。
 # 在已解锁的桌面会话中可加 -IncludeDesktop，覆盖活动数据表宏、截图和超时清理。
-./tests/smoke.ps1 -CourseRoot 'C:\path\to\sm3ABP'
+./tests/smoke.ps1
 ```
 
 ## Workflows

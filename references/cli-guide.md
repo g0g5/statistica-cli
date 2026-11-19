@@ -156,9 +156,8 @@ For SVB macros that open their own inputs and save their own results, STATISTICA
 ## Run the integration checks
 
 ```powershell
-$smoke = 'D:/Projects/Coding/statistical-cli/tests/smoke.ps1'
-& $smoke
-& $smoke -IncludeDesktop
+./tests/smoke.ps1
+./tests/smoke.ps1 -IncludeDesktop
 ```
 
-The first invocation exercises the Library backend with course samples and temporary outputs. If you run the tests from another directory, pass `-CourseRoot` with the path to the sm3ABP coursework repository. Use `-IncludeDesktop` in an unlocked desktop session to add checks for the active-spreadsheet macro, window capture, and cleanup after a timed-out desktop COM call.
+Run these commands from the CLI repository root. The smoke test reads its inputs from `tests/fixtures` and writes outputs to a temporary directory. Use `-IncludeDesktop` in an unlocked desktop session to add checks for the active-spreadsheet macro, window capture, and cleanup after a timed-out desktop COM call.

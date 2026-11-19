@@ -1,19 +1,17 @@
 #Requires -Version 7.5
 [CmdletBinding()]
-param(
-    [switch]$IncludeDesktop,
-    [string]$CourseRoot = (Get-Location).ProviderPath
-)
+param([switch]$IncludeDesktop)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $cli = Join-Path $PSScriptRoot '../scripts/statistica.ps1'
-$repo = (Resolve-Path -LiteralPath $CourseRoot).ProviderPath
-$lab6 = Join-Path $repo 'lab6/materials/PR_DWLS_025_005_065_20.sta'
-$lab7 = Join-Path $repo 'lab7/materials/Lowess/Trd/PR_Lws_0425_005_080_11_3.sta'
-$macro = Join-Path $repo 'lab7/materials/Lowess/Trd/Trd_Lws.svb'
-$book = Join-Path $repo 'lab4/lab4.stw'
-$inputs = @($lab6, $lab7, $macro, $book)
+$fixtures = Join-Path $PSScriptRoot 'fixtures'
+$lab3 = Join-Path $fixtures 'lab3.csv'
+$book = Join-Path $fixtures 'lab4.stw'
+$lab6 = Join-Path $fixtures 'PR_DWLS_025_005_065_20.sta'
+$lab7 = Join-Path $fixtures 'PR_Lws_0425_005_080_11_3.sta'
+$macro = Join-Path $fixtures 'Trd_Lws.svb'
+$inputs = @($lab3, $book, $lab6, $lab7, $macro)
 $before = (Get-FileHash -LiteralPath $inputs).Hash
 $baseline = @(Get-Process -Name statist -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Id)
 
@@ -68,6 +66,22 @@ try {
     $importRows = Import-Csv -LiteralPath $roundTrip
     Assert-Result ($importRows[0].v2 -ceq '北京, Москва' -and $importRows[1].v1 -eq '' -and
         $importRows[1].v2 -ceq '2026-11-19T02:00:00Z') 'Typed CSV import did not round-trip.'
+
+    $lab3Columns = @((Get-Content -LiteralPath $lab3 -TotalCount 1).Split(',') | ForEach-Object {
+        @{ name = $_; type = 'double' }
+    })
+    Write-TestJson 'series-columns.json' @{ columns = $lab3Columns }
+    $series = Join-Path $temp 'series.sta'
+    $null = & $cli ImportCsv -InputPath $lab3 -SpecPath (Join-Path $temp 'series-columns.json') -OutputPath $series -Backend Library
+    $seriesCsv = Join-Path $temp 'series.csv'
+    $null = & $cli ExportCsv -InputPath $series -OutputPath $seriesCsv -Columns '1,2,9' -Backend Library
+    $seriesRows = @(Import-Csv -LiteralPath $seriesCsv)
+    Assert-Result ($seriesRows.Count -eq 16512) 'Lab 3 round-trip row count changed.'
+    Assert-Result ($seriesRows[0].v2 -eq '112' -and $seriesRows[0].v9 -eq '' -and
+        $seriesRows[143].v2 -eq '432' -and $seriesRows[144].v2 -eq '' -and
+        $seriesRows[155].v1 -eq '156') 'Lab 3 series values or missing fields changed.'
+    $nonemptyTail = @($seriesRows | Select-Object -Skip 156 | Where-Object { $_.v1 -ne '' -or $_.v2 -ne '' -or $_.v9 -ne '' })
+    Assert-Result ($nonemptyTail.Count -eq 0) 'Lab 3 all-missing tail did not round-trip.'
 
     $expected = @{ '1,33' = 210.827438527348; '42,3' = 0 }
     $encoding = [Text.Encoding]::Latin1
@@ -146,7 +160,7 @@ try {
     }
 
     Assert-Result (-not (Get-ChildItem -LiteralPath $temp -Force -Filter '.statistica-*')) 'A stage was left behind.'
-    Assert-Result (-not (Compare-Object $before (Get-FileHash -LiteralPath $inputs).Hash)) 'Course materials changed.'
+    Assert-Result (-not (Compare-Object $before (Get-FileHash -LiteralPath $inputs).Hash)) 'Test fixtures changed.'
     $remaining = @(Get-Process -Name statist -ErrorAction SilentlyContinue | Where-Object { $_.Id -notin $baseline })
     Assert-Result ($remaining.Count -eq 0) 'STATISTICA servers remained after the smoke test.'
     'STATISTICA CLI smoke checks passed.'
