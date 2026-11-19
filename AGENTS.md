@@ -13,8 +13,11 @@
 
 ```text
 statistica-cli/
+|- README.md                 # 用户依赖、构建、CLI 和 Skill 安装
 |- global.json               # 固定 .NET SDK 版本
-|- TODO.md                   # 重构验收记录，链接原始重构方案
+|- docs/
+|  |- REFACTOR-PLAN.md        # 原始重构方案
+|  \- TODO.md                 # 重构进度、验收记录和待确认事项
 |- src/
 |  \- statistica-cli/
 |     |- Program.cs          # 命令行和内部 STA 工作进程入口

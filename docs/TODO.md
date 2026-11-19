@@ -13,7 +13,7 @@
 - [x] 迁移 `create-graph`、`export-graph`、`list-workbook`、`extract-workbook-item` 和 `build-workbook`。验证了图表原生文件回读、散点连线、PNG/SVG、工作簿条目顺序与重名路径。
 - [x] 迁移 `screenshot`，使用 Win32 采集和 WIC 编码。通过未锁定桌面会话验证 STA、STG、STW 和文档裁切。
 - [x] 对照旧入口检查合成数据及旧式 ANSI STA 的 CSV 字节。发布版通过基线和集成冒烟测试，覆盖并发覆盖、失败回滚、缺失值、旧式 ANSI 显示文本和原始输入完整性。
-- [x] 将通用化的 [技能](skills/statistica-cli/SKILL.md) 与 [CLI 指南](skills/statistica-cli/references/cli-guide.md) 嵌入 EXE。验证独立版与全局工具的离线安装、工作目录与用户目录、相对链接、重复安装、冲突和强制覆盖。
+- [x] 将通用化的 [技能](../skills/statistica-cli/SKILL.md) 与 [CLI 指南](../skills/statistica-cli/references/cli-guide.md) 嵌入 EXE。验证独立版与全局工具的离线安装、工作目录与用户目录、相对链接、重复安装、冲突和强制覆盖。
 - [x] 切换到 C# 入口，移除旧 PowerShell 运行脚本和内部样式宏，更新项目说明。在新的 GitHub 克隆中应用本地变更后构建入口包和 `win-x64` 包，从本地源安装当前用户的全局工具，并在仓库外通过 PATH 验证 `statistica-cli probe --detailed`。
 
 ## 待确认
