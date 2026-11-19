@@ -1,5 +1,7 @@
 # statistica-cli
 
+[简体中文](README_CN.md) · [Русский](README_RU.md)
+
 Work with TIBCO STATISTICA spreadsheets, SVB macros, graphs, and workbooks from the command line on Windows.
 
 ## Requirements
