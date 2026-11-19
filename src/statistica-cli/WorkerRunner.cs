@@ -6,7 +6,7 @@ using System.Text.Json;
 
 namespace StatisticaCli;
 
-internal sealed record WorkerRun(WorkerResult? Result, WorkerFailure? Failure, WorkerEvent[] Events, WorkerExit Exit);
+internal sealed record WorkerRun(WorkerResult? Result, WorkerFailure? Failure, WorkerEvent[] Events, WorkerExit Exit, JobRecord[] Records);
 
 internal static class WorkerRunner
 {
@@ -14,8 +14,9 @@ internal static class WorkerRunner
         int timeoutSeconds, TextWriter? diagnostics, bool verbose)
     {
         var run = await RunAsync(executable, request, timeoutSeconds, diagnostics, verbose);
-        if (request.Backend == Backend.Auto && run.Failure is { Status: "timed_out", Phase: "Activate",
-                Operation: "CoCreateInstance" or "Application.ProcessID", Backend: "Application" or "Library" } failure)
+        if (request.Backend == Backend.Auto && request.Jobs?.FirstOrDefault()?.NeedsDesktop != true &&
+            run.Records.Length == 0 && run.Failure is { Status: "timed_out", Phase: "Activate",
+                Operation: "CoCreateInstance" or "Application.ProcessID", Backend: "Application" or "Library", Job: 1 } failure)
         {
             var other = failure.Backend == "Application" ? "Library" : "Application";
             bool otherAttempted = run.Events.Any(entry =>
@@ -60,9 +61,10 @@ internal static class WorkerRunner
         var events = new List<WorkerEvent>();
         var ended = new List<int>();
         var json = WorkerJson.Default;
-        WorkerEvent? pending = null;
+        var pending = new Stack<WorkerEvent>();
         WorkerFailure? failure = null;
         WorkerResult? result = null;
+        var records = new List<JobRecord>();
         try
         {
             var connect = pipe.WaitForConnectionAsync(timeout.Token);
@@ -82,21 +84,29 @@ internal static class WorkerRunner
                 if (message.Event is { } entry)
                 {
                     events.Add(entry);
+                    if (entry.Event == "job_begin")
+                    {
+                        pending.Clear();
+                        timeout.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
+                    }
                     if (entry.Event == "begin")
-                        pending = entry;
-                    else if (entry.Event is "end" or "error")
-                        pending = null;
+                        pending.Push(entry);
+                    else if (entry.Event is "end" or "error" && pending.TryPeek(out var call) &&
+                        call.Phase == entry.Phase && call.Operation == entry.Operation)
+                        pending.Pop();
                     if (verbose)
                         Console.Error.WriteLine($"Job {entry.Job} {entry.Event} {entry.Phase}/{entry.Operation} {entry.Backend} {entry.Message}");
                     diagnostics?.WriteLine(JsonSerializer.Serialize(entry, json.WorkerEvent));
                 }
                 else if (message.Failure is { } reported)
                     failure = reported;
+                else if (message.Record is { } checkpoint)
+                    records.Add(checkpoint);
                 else if (message.Result is { } completed)
                     result = completed;
             }
             await exit;
-            if (failure is null && (process.ExitCode != 0 || result is null))
+            if (failure is null && (process.ExitCode != 0 || (request.Jobs is null && result is null)))
             {
                 var lastError = events.LastOrDefault(entry => entry.Event == "error");
                 failure = new("failed", lastError?.Phase ?? "Worker", lastError?.Operation ?? "Execute",
@@ -106,7 +116,7 @@ internal static class WorkerRunner
         }
         catch (OperationCanceledException) when (timeout.IsCancellationRequested)
         {
-            var last = pending ?? events.LastOrDefault(entry => entry.Event == "job_begin");
+            var last = pending.TryPeek(out var call) ? call : events.LastOrDefault(entry => entry.Event == "job_begin");
             failure = new("timed_out", last?.Phase ?? "Worker", last?.Operation ?? "Start-Process",
                 last?.Backend, null, last?.Job ?? 0, $"STATISTICA worker exceeded {timeoutSeconds} seconds.");
         }
@@ -134,7 +144,7 @@ internal static class WorkerRunner
         var workerExit = new WorkerExit(DateTimeOffset.UtcNow, process.Id, failure,
             inspectDesktop ? StaProcesses.Snapshot() : [], ended.ToArray(), ReadOutput(stdout));
         diagnostics?.WriteLine(JsonSerializer.Serialize(workerExit, json.WorkerExit));
-        return new(result, failure, events.ToArray(), workerExit);
+        return new(result, failure, events.ToArray(), workerExit, records.ToArray());
     }
 
     private static string? ReadOutput(Task<string> read) =>

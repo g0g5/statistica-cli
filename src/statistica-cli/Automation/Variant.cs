@@ -9,6 +9,8 @@ internal enum OptionalArgument
     Missing
 }
 
+internal enum VariantOutput { Value }
+
 [StructLayout(LayoutKind.Explicit, Size = 24)]
 internal unsafe struct Variant
 {
@@ -22,6 +24,8 @@ internal unsafe struct Variant
     [FieldOffset(8)] private long integer;
     [FieldOffset(8)] private float single;
     [FieldOffset(8)] private double number;
+
+    internal static Variant Reference(Variant* value) => new() { type = ByRef | VariantType, pointer = (nint)value };
 
     internal static Variant From(object? value)
     {

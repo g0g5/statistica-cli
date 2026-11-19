@@ -7,7 +7,7 @@ using StatisticaCli.Automation;
 
 namespace StatisticaCli;
 
-internal sealed class StaWorker(WorkerRequest request, Action<WorkerMessage> send)
+internal sealed partial class StaWorker(WorkerRequest request, Action<WorkerMessage> send)
 {
     private sealed class CallFailed(WorkerFailure failure) : Exception(failure.Message)
     {
@@ -29,12 +29,14 @@ internal sealed class StaWorker(WorkerRequest request, Action<WorkerMessage> sen
 
         void Send(WorkerMessage message) => writer.WriteLine(JsonSerializer.Serialize(message, json.WorkerMessage));
         var worker = new StaWorker(request, Send);
+        if (request.Jobs is { } jobs)
+            return worker.RunJobs(jobs);
         worker.Emit("job_begin", "Job", request.Operation.ToString());
         try
         {
             WorkerResult result;
             using (var apartment = new AutomationApartment())
-                result = worker.Execute(apartment);
+                result = worker.Execute(apartment, request.Detailed);
             worker.Emit("job_end", "Job", request.Operation.ToString());
             Send(new(Result: result));
             return 0;
@@ -47,12 +49,12 @@ internal sealed class StaWorker(WorkerRequest request, Action<WorkerMessage> sen
         }
     }
 
-    private WorkerResult Execute(AutomationApartment apartment)
+    private WorkerResult Execute(AutomationApartment apartment, bool detailed)
     {
         if (request.ApplicationError is { } applicationError)
-            activationErrors.Add(Backend.Application, applicationError);
+            activationErrors.TryAdd(Backend.Application, applicationError);
         if (request.LibraryError is { } libraryError)
-            activationErrors.Add(Backend.Library, libraryError);
+            activationErrors.TryAdd(Backend.Library, libraryError);
 
         var candidates = request.Backend == Backend.Auto ? [Backend.Application, Backend.Library] : new[] { request.Backend };
         var components = new Dictionary<string, ProbeComponent>();
@@ -72,7 +74,7 @@ internal sealed class StaWorker(WorkerRequest request, Action<WorkerMessage> sen
                 catch (CallFailed error)
                 {
                     activationErrors[backend] = error.Failure.Format();
-                    if (!request.Detailed && candidates.Length == 1)
+                    if (!detailed && candidates.Length == 1)
                         throw;
                 }
                 if (app is not null)
@@ -81,10 +83,8 @@ internal sealed class StaWorker(WorkerRequest request, Action<WorkerMessage> sen
                     {
                         try
                         {
-                            if (request.Operation is WorkerOperation.Inspect or WorkerOperation.ExportCsv)
-                                return ExecuteSpreadsheet(app);
                             try { version = Call("Probe", "Application.Version", () => app.Get<string>("Version")); }
-                            catch (CallFailed error) when (request.Detailed && request.Operation == WorkerOperation.Probe)
+                            catch (CallFailed error) when (detailed && request.Operation == WorkerOperation.Probe)
                             {
                                 activationErrors[backend] = error.Failure.Format();
                             }
@@ -109,13 +109,13 @@ internal sealed class StaWorker(WorkerRequest request, Action<WorkerMessage> sen
             if (version is not null)
                 result ??= new($"Statistica.{backend}", true, version, ApplicationAvailable(backend),
                     activationErrors.GetValueOrDefault(Backend.Application));
-            if (!request.Detailed && result is not null)
+            if (!detailed && result is not null)
                 return new(Probe: result);
-            if (request.Detailed)
+            if (detailed)
                 components.Add(backend.ToString(), new(version is not null, version, errorText,
                     version is null ? null : pid, Registrations(backend)));
         }
-        if (!request.Detailed)
+        if (!detailed)
             throw new CallFailed(Report("Activate", "Open-StaSession",
                 new InvalidOperationException("STATISTICA COM activation failed. " + string.Join(" | ", activationErrors.Values))));
 
@@ -128,19 +128,18 @@ internal sealed class StaWorker(WorkerRequest request, Action<WorkerMessage> sen
         });
     }
 
-    private WorkerResult ExecuteSpreadsheet(DispatchObject app)
+    private WorkerResult ExecuteSpreadsheet(DispatchObject app, string input, WorkerOperation operation,
+        string? reportedPath, CsvExportOptions? export)
     {
-        string input = request.InputPath ?? throw new InvalidDataException("Missing spreadsheet path.");
         using var sheet = Call("Open", "Spreadsheets.OpenReadOnly", () => Spreadsheet.OpenReadOnly(app, input));
         try
         {
-            if (request.Operation == WorkerOperation.Inspect)
-                return new(Spreadsheet: Call("Read", "Spreadsheet variable metadata", () => sheet.Inspect(input)));
+            if (operation == WorkerOperation.Inspect)
+                return new(Spreadsheet: Call("Read", "Spreadsheet variable metadata", () => sheet.Inspect(reportedPath ?? input)));
 
-            CsvExportOptions export = request.CsvExport ?? throw new InvalidDataException("Missing CSV export options.");
             Call("Export", "Spreadsheet data to CSV", () =>
             {
-                CsvExport.Write(sheet, export);
+                CsvExport.Write(sheet, export!);
                 return true;
             });
             return new();
@@ -196,6 +195,16 @@ internal sealed class StaWorker(WorkerRequest request, Action<WorkerMessage> sen
             Emit("end", phase, operation, entry => entry with { ElapsedMs = watch.ElapsedMilliseconds });
             return result;
         }
+        catch (CallFailed)
+        {
+            Emit("end", phase, operation, entry => entry with { ElapsedMs = watch.ElapsedMilliseconds });
+            throw;
+        }
+        catch (DocumentCleanupException error)
+        {
+            Emit("end", phase, operation, entry => entry with { ElapsedMs = watch.ElapsedMilliseconds });
+            throw new CallFailed(Report("Cleanup", "Document", error, watch.ElapsedMilliseconds));
+        }
         catch (Exception error) { throw new CallFailed(Report(phase, operation, error, watch.ElapsedMilliseconds)); }
     }
 
@@ -206,12 +215,12 @@ internal sealed class StaWorker(WorkerRequest request, Action<WorkerMessage> sen
         {
             Hresult = hresult, Message = error.Message, ElapsedMs = elapsedMs
         });
-        return new("failed", phase, operation, backend == Backend.Auto ? null : backend.ToString(), hresult, 1, error.Message);
+        return new("failed", phase, operation, backend == Backend.Auto ? null : backend.ToString(), hresult, jobId, error.Message);
     }
 
     private void Emit(string type, string phase, string operation, Func<WorkerEvent, WorkerEvent>? enrich = null)
     {
-        var entry = new WorkerEvent(type, phase, operation, backend == Backend.Auto ? null : backend.ToString());
+        var entry = new WorkerEvent(type, phase, operation, backend == Backend.Auto ? null : backend.ToString()) { Job = jobId };
         send(new(Event: enrich?.Invoke(entry) ?? entry));
     }
 

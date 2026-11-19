@@ -15,6 +15,8 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="System.CommandLine" Version="2.0.15" />
+    <EmbeddedResource Include="../../skills/statistica-cli/SKILL.md" LogicalName="SKILL.md" />
+    <EmbeddedResource Include="../../skills/statistica-cli/references/cli-guide.md" LogicalName="references/cli-guide.md" />
     <InternalsVisibleTo Include="StatisticaCli.BaselineTests" />
   </ItemGroup>
 </Project>

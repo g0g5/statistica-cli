@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | `lab3.csv` | `lab3/lab3.csv` | 16,512 条记录的 CSV 导入和导出，含跨分块的全空尾行 |
 | `lab4.stw` | `lab4/lab4.stw` | 从含多层目录的工作簿列举和提取数据表与图表 |
-| `PR_DWLS_025_005_065_20.sta` | `lab6/materials/PR_DWLS_025_005_065_20.sta` | 数值及日期显示文本导出、缺失值、选列顺序和公式回读 |
+| `PR_DWLS_025_005_065_20.sta` | `lab6/materials/PR_DWLS_025_005_065_20.sta` | 数值及日期显示文本导出、缺失值、选列顺序和公式回读。测试向副本写入西里尔字母，检查 ANSI 字节和显示文本 |
 | `PR_Lws_0425_005_080_11_3.sta` | `lab7/materials/Lowess/Trd/PR_Lws_0425_005_080_11_3.sta` | 宏输入、批处理依赖和绘图 |
 | `Trd_Lws.svb` | `lab7/materials/Lowess/Trd/Trd_Lws.svb` | 活动数据表宏，测试在临时目录生成显式传参的副本 |
 

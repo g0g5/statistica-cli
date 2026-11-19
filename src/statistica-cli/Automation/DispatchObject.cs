@@ -92,6 +92,8 @@ internal sealed unsafe class DispatchObject : IDisposable
             return expected;
         if (value is IConvertible && typeof(T) == typeof(int))
             return (T)(object)Convert.ToInt32(value);
+        if (value is IConvertible && typeof(T) == typeof(long))
+            return (T)(object)Convert.ToInt64(value);
         if (value is IConvertible && typeof(T) == typeof(double))
             return (T)(object)Convert.ToDouble(value);
         (value as DispatchObject)?.Dispose();
@@ -106,12 +108,17 @@ internal sealed unsafe class DispatchObject : IDisposable
         int id = FindDispatchId(member);
         Span<Variant> arguments = values.Length <= 16 ? stackalloc Variant[values.Length] : new Variant[values.Length];
         arguments.Clear();
+        int outputCount = values.Count(value => value is VariantOutput);
+        Variant* outputs = stackalloc Variant[outputCount];
+        new Span<Variant>(outputs, outputCount).Clear();
+        int outputIndex = 0;
         Variant result = default;
         ExceptionInfo error = default;
         try
         {
             for (int i = 0; i < values.Length; i++)
-                arguments[values.Length - 1 - i] = Variant.From(values[i]);
+                arguments[values.Length - 1 - i] = values[i] is VariantOutput
+                    ? Variant.Reference(&outputs[outputIndex++]) : Variant.From(values[i]);
 
             fixed (Variant* args = arguments)
             {
@@ -154,6 +161,8 @@ internal sealed unsafe class DispatchObject : IDisposable
         finally
         {
             Native.VariantClear(&result);
+            for (int i = 0; i < outputIndex; i++)
+                Native.VariantClear(&outputs[i]);
             Native.SysFreeString(error.Source);
             Native.SysFreeString(error.Description);
             Native.SysFreeString(error.HelpFile);
