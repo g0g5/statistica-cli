@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net11.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PublishAot>true</PublishAot>
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <PackAsTool>true</PackAsTool>
+    <ToolPackageRuntimeIdentifiers>win-x64</ToolPackageRuntimeIdentifiers>
+    <PackageId>statistica-cli</PackageId>
+    <ToolCommandName>statistica-cli</ToolCommandName>
+    <AssemblyName>statistica-cli</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="2.0.15" />
+    <InternalsVisibleTo Include="StatisticaCli.BaselineTests" />
+  </ItemGroup>
+</Project>

@@ -1,5 +1,7 @@
 # STATISTICA CLI 的 C# 重构方案
 
+> 本文件保留重构方案原文。实施进度、验收结果和待办事项统一记录在 [TODO.md](TODO.md)，后续更新请写入该文件。
+
 ## 目标与边界
 
 用 C# 重写 Windows CLI，以本机 .NET SDK 11.0.100 发布 `win-x64` Native AOT 产物。项目和命令统一使用 **statistica-cli**，发布文件名为 **`statistica-cli.exe`**，便于与 STATISTICA 产品及其 `statist.exe` 区分。运行端依赖本机已安装并授权的 STATISTICA 和 Windows 系统组件。首版在当前 x64 环境验收。
