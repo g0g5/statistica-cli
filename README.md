@@ -1,22 +1,22 @@
 # statistica-cli
 
-在 Windows 上通过命令行操作 TIBCO STATISTICA 数据表、SVB 宏、图表和工作簿。
+Work with TIBCO STATISTICA spreadsheets, SVB macros, graphs, and workbooks from the command line on Windows.
 
-## 依赖
+## Requirements
 
-- 运行需要 Windows x64 和本机已安装、授权的 TIBCO STATISTICA。截图和依赖活动数据表的宏需要未锁定的交互式桌面。
-- 从源码构建需要 .NET SDK 11.0.100（由 `global.json` 固定），以及 Visual Studio Build Tools 中的 MSVC C++ 工具链和 Windows SDK。使用 Git 克隆源码。
+- Running the CLI requires Windows x64 and a locally installed, licensed copy of TIBCO STATISTICA. Taking screenshots and running macros that depend on an active spreadsheet require an unlocked interactive desktop session.
+- Building from source requires .NET SDK 11.0.100 (pinned in `global.json`), along with the MSVC C++ toolchain and Windows SDK from Visual Studio Build Tools. Use Git to clone the source code.
 
-## 构建与安装
+## Build and install
 
-在 PowerShell 中克隆仓库并进入项目根目录。
+In PowerShell, clone the repository and change to the project root.
 
 ```powershell
 git clone https://github.com/g0g5/statistica-cli.git
 Set-Location statistica-cli
 ```
 
-打包会在同一目录生成入口包和 `win-x64` 包。然后安装为当前用户的 .NET 全局工具。
+The packaging command creates the entry-point package and the `win-x64` package in the same directory. Then install the CLI as a .NET global tool for the current user.
 
 ```powershell
 dotnet pack ./src/statistica-cli/statistica-cli.csproj -c Release -o ./artifacts/tool-packages
@@ -24,27 +24,27 @@ dotnet tool install --global statistica-cli --source ./artifacts/tool-packages
 statistica-cli probe --detailed
 ```
 
-如果终端找不到 `statistica-cli`，请确认 `%USERPROFILE%\.dotnet\tools` 已加入用户 `PATH`，然后打开新终端。
+If the terminal cannot find `statistica-cli`, make sure `%USERPROFILE%\.dotnet\tools` is on the user's `PATH`, then open a new terminal.
 
-也可以发布并直接运行独立的 Native AOT 可执行文件。运行该文件无需安装 .NET SDK 或运行时。
+You can also publish a standalone Native AOT executable and run it directly. Running the executable requires neither the .NET SDK nor the .NET runtime.
 
 ```powershell
 dotnet publish ./src/statistica-cli/statistica-cli.csproj -c Release -r win-x64
 & './src/statistica-cli/bin/Release/net11.0/win-x64/publish/statistica-cli.exe' probe --detailed
 ```
 
-## 安装 Skill
+## Install the Skill
 
-CLI 内置 Skill 和命令指南，可离线安装。全局工具和独立 EXE 都支持以下命令。使用独立 EXE 时，将 `statistica-cli` 换成该文件的调用路径。
+The CLI includes the Skill and command guide for offline installation. Both the global tool and the standalone executable support the following commands. When using the standalone executable, replace `statistica-cli` with the path used to invoke it.
 
 ```powershell
-# 在需要使用 Skill 的项目根目录运行。
+# Run from the root of the project where you want to use the Skill.
 statistica-cli install-skill
 
-# 或安装到当前用户的主目录。
+# Or install it in the current user's home directory.
 statistica-cli install-skill --global
 ```
 
-两种方式分别写入项目或用户主目录下的 `.agents/skills/statistica-cli/`。如需覆盖冲突文件，添加 `--force`。
+These options install the files under `.agents/skills/statistica-cli/` in the project root and the user's home directory, respectively. To overwrite conflicting files, add `--force`.
 
-更多用法见 [CLI 命令指南](skills/statistica-cli/references/cli-guide.md)。
+For more usage information, see the [CLI command guide](skills/statistica-cli/references/cli-guide.md).

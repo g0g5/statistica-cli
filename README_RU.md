@@ -1,0 +1,50 @@
+# statistica-cli
+
+Работа с таблицами данных, макросами SVB, графиками и рабочими книгами TIBCO STATISTICA из командной строки Windows.
+
+## Требования
+
+- Для запуска нужны Windows x64 и установленная на компьютере лицензированная копия TIBCO STATISTICA. Для создания снимков экрана и запуска макросов, которым нужна активная таблица данных, требуется разблокированный интерактивный сеанс рабочего стола.
+- Для сборки из исходного кода нужны .NET SDK 11.0.100 (версия зафиксирована в `global.json`), инструменты MSVC для C++ и Windows SDK из состава Visual Studio Build Tools. Для клонирования исходного кода используйте Git.
+
+## Сборка и установка
+
+В PowerShell клонируйте репозиторий и перейдите в корневой каталог проекта.
+
+```powershell
+git clone https://github.com/g0g5/statistica-cli.git
+Set-Location statistica-cli
+```
+
+Команда упаковки создаёт пакет с точкой входа и пакет `win-x64` в одном каталоге. Затем установите CLI как глобальный инструмент .NET для текущего пользователя.
+
+```powershell
+dotnet pack ./src/statistica-cli/statistica-cli.csproj -c Release -o ./artifacts/tool-packages
+dotnet tool install --global statistica-cli --source ./artifacts/tool-packages
+statistica-cli probe --detailed
+```
+
+Если терминал не находит `statistica-cli`, убедитесь, что `%USERPROFILE%\.dotnet\tools` добавлен в пользовательскую переменную `PATH`, затем откройте новый терминал.
+
+Можно также опубликовать автономный исполняемый файл Native AOT и запустить его напрямую. Для его запуска установка .NET SDK или среды выполнения .NET не требуется.
+
+```powershell
+dotnet publish ./src/statistica-cli/statistica-cli.csproj -c Release -r win-x64
+& './src/statistica-cli/bin/Release/net11.0/win-x64/publish/statistica-cli.exe' probe --detailed
+```
+
+## Установка навыка (Skill)
+
+Навык и руководство по командам встроены в CLI и доступны для установки без подключения к интернету. Следующие команды поддерживаются как глобальным инструментом, так и автономным исполняемым файлом. При использовании автономного файла замените `statistica-cli` на путь, по которому вы его запускаете.
+
+```powershell
+# Выполните в корневом каталоге проекта, в котором хотите использовать навык.
+statistica-cli install-skill
+
+# Или установите навык в домашний каталог текущего пользователя.
+statistica-cli install-skill --global
+```
+
+В первом случае файлы устанавливаются в `.agents/skills/statistica-cli/` в корневом каталоге проекта, во втором — в домашнем каталоге пользователя. Чтобы перезаписать конфликтующие файлы, добавьте `--force`.
+
+Подробнее об использовании см. в [руководстве по командам CLI](skills/statistica-cli/references/cli-guide.md).
