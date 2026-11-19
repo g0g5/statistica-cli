@@ -1,0 +1,13 @@
+Option Explicit
+
+Sub Main
+    Dim graph As Graph
+    Dim series As Plot2D
+    Dim index As Long
+    Set graph = GetScriptArgument()
+    For index = 1 To graph.PlotsCount
+        Set series = graph.Plot(index)
+        series.DisplayLine = True
+        If Not series.DisplayLine Then Err.Raise 5
+    Next index
+End Sub
