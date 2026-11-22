@@ -31,8 +31,8 @@ If the terminal cannot find `statistica-cli`, make sure `%USERPROFILE%\.dotnet\t
 You can also publish a standalone Native AOT executable and run it directly. Running the executable requires neither the .NET SDK nor the .NET runtime.
 
 ```powershell
-dotnet publish ./src/statistica-cli/statistica-cli.csproj -c Release -r win-x64
-& './src/statistica-cli/bin/Release/net11.0/win-x64/publish/statistica-cli.exe' probe --detailed
+./build.ps1
+& './dist/statistica-cli.exe' probe --detailed
 ```
 
 ## Install the Skill

@@ -29,8 +29,8 @@ statistica-cli probe --detailed
 Можно также опубликовать автономный исполняемый файл Native AOT и запустить его напрямую. Для его запуска установка .NET SDK или среды выполнения .NET не требуется.
 
 ```powershell
-dotnet publish ./src/statistica-cli/statistica-cli.csproj -c Release -r win-x64
-& './src/statistica-cli/bin/Release/net11.0/win-x64/publish/statistica-cli.exe' probe --detailed
+./build.ps1
+& './dist/statistica-cli.exe' probe --detailed
 ```
 
 ## Установка навыка (Skill)

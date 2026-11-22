@@ -29,8 +29,8 @@ statistica-cli probe --detailed
 也可以发布并直接运行独立的 Native AOT 可执行文件。运行该文件无需安装 .NET SDK 或运行时。
 
 ```powershell
-dotnet publish ./src/statistica-cli/statistica-cli.csproj -c Release -r win-x64
-& './src/statistica-cli/bin/Release/net11.0/win-x64/publish/statistica-cli.exe' probe --detailed
+./build.ps1
+& './dist/statistica-cli.exe' probe --detailed
 ```
 
 ## 安装 Skill
